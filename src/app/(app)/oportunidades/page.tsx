@@ -2,7 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Download, Kanban as KanbanIcon, List, Plus } from "lucide-react";
 import { Modal } from "@/components/forms";
-import { Badge, Card, EmptyState, LinkButton, Pagination, Select, Table, cn, inputClass } from "@/components/ui";
+import { Badge, Card, EmptyState, LinkButton, Pagination, SearchField, Segmented, Select, Table } from "@/components/ui";
+import { FilterForm } from "@/components/filter-form";
 import { getContext, getCustomFields, getMembers, getPipelines } from "@/lib/session";
 import { sanitizeSearch } from "@/lib/forms";
 import { date, money } from "@/lib/format";
@@ -72,6 +73,7 @@ export default async function DealsPage({ searchParams }: PageProps<"/oportunida
           {pipeline ? (
             <Modal
               title="Nova oportunidade"
+              autoOpenParam="novo"
               triggerVariant="primary"
               wide
               trigger={
@@ -95,22 +97,16 @@ export default async function DealsPage({ searchParams }: PageProps<"/oportunida
         </div>
       </div>
 
-      <form className="mb-4 flex flex-wrap items-center gap-2" action="/oportunidades">
+      <FilterForm className="mb-4 flex flex-wrap items-center gap-2" action="/oportunidades">
         <input type="hidden" name="view" value={view} />
-        <div className="inline-flex rounded-md border border-line bg-surface p-0.5">
-          <Link
-            href={params({ view: "kanban", p: undefined })}
-            className={cn("flex items-center gap-1.5 rounded px-2.5 py-1.5 text-sm", view === "kanban" ? "bg-surface-2 font-medium" : "text-muted")}
-          >
-            <KanbanIcon className="size-4" /> Funil
-          </Link>
-          <Link
-            href={params({ view: "lista", p: undefined })}
-            className={cn("flex items-center gap-1.5 rounded px-2.5 py-1.5 text-sm", view === "lista" ? "bg-surface-2 font-medium" : "text-muted")}
-          >
-            <List className="size-4" /> Lista
-          </Link>
-        </div>
+        <Segmented
+          label="Visualização"
+          value={view}
+          items={[
+            { value: "kanban", label: <><KanbanIcon className="size-4" /> Funil</>, href: params({ view: "kanban", p: undefined }) },
+            { value: "lista", label: <><List className="size-4" /> Lista</>, href: params({ view: "lista", p: undefined }) },
+          ]}
+        />
         {pipelines.length > 1 && (
           <Select name="funil" defaultValue={pipeline?.id} className="w-auto" aria-label="Funil">
             {pipelines.map((p) => (
@@ -137,9 +133,8 @@ export default async function DealsPage({ searchParams }: PageProps<"/oportunida
             <option value="todas">Todas</option>
           </Select>
         )}
-        <input name="q" defaultValue={q} placeholder="Filtrar por título…" className={cn(inputClass, "h-9 w-48")} />
-        <button className="h-9 rounded-md border border-line bg-surface px-3 text-sm hover:bg-surface-2">Aplicar</button>
-      </form>
+        <SearchField defaultValue={q} placeholder="Filtrar por título…" />
+      </FilterForm>
 
       {!pipeline ? (
         <Card>

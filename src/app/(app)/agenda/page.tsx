@@ -118,7 +118,7 @@ export default async function AgendaPage({ searchParams }: PageProps<"/agenda">)
         title="Agenda"
         description="Reuniões, visitas e compromissos da equipe."
         actions={
-          <Modal title="Novo compromisso" triggerVariant="primary" wide trigger={<><Plus className="size-4" /> Novo compromisso</>}>
+          <Modal title="Novo compromisso" autoOpenParam="novo" triggerVariant="primary" wide trigger={<><Plus className="size-4" /> Novo compromisso</>}>
             <AppointmentForm
               action={createAppointment}
               orgId={ctx.org.id}

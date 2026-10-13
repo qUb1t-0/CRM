@@ -1,11 +1,11 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CalendarDays, CheckSquare, Kanban, Sparkles, TrendingDown, Trophy } from "lucide-react";
 import { BarList } from "@/components/progress";
 import { Progress } from "@/components/progress";
 import { NewTaskButton, TaskList, type TaskRow } from "@/components/tasks";
 import { Timeline, type TimelineEvent } from "@/components/timeline";
-import { Card, CardHeader, EmptyState, PageHeader, Stat } from "@/components/ui";
+import { Card, CardHeader, EmptyState, LinkButton, PageHeader, Segmented, Stat } from "@/components/ui";
 import { getContext, getMembers, getPipelines } from "@/lib/session";
 import { addDays, dayStart, money, moneyCompact, monthStartISO, time, todayISO } from "@/lib/format";
 
@@ -89,25 +89,48 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
         title={`${greeting}, ${firstName}`}
         description={scope === "meu" ? "Seus números e o que precisa de atenção hoje." : `Visão geral da equipe ${org.name}.`}
         actions={
-          <nav className="inline-flex rounded-md border border-line bg-surface p-0.5 text-sm" aria-label="Visão">
-            <Link href="/?visao=meu" className={scope === "meu" ? "rounded bg-surface-2 px-2.5 py-1.5 font-medium" : "px-2.5 py-1.5 text-muted"}>
-              Meus números
-            </Link>
-            <Link href="/?visao=equipe" className={scope === "equipe" ? "rounded bg-surface-2 px-2.5 py-1.5 font-medium" : "px-2.5 py-1.5 text-muted"}>
-              Equipe
-            </Link>
-          </nav>
+          <Segmented
+            label="Visão"
+            value={scope}
+            items={[
+              { value: "meu", label: "Meus números", href: "/?visao=meu" },
+              { value: "equipe", label: "Equipe", href: "/?visao=equipe" },
+            ]}
+          />
         }
       />
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Pipeline em aberto" value={moneyCompact(stats.open_value)} hint={`${stats.open_count ?? 0} oportunidades · ponderado ${moneyCompact(stats.weighted_value)}`} />
-        <Stat label="Ganho no mês" value={moneyCompact(stats.won_month_value)} hint={`${stats.won_month_count ?? 0} negócios`} tone="ok" />
-        <Stat label="Perdidas no mês" value={stats.lost_month_count ?? 0} />
         <Stat
-          label="Tarefas"
+          label="Pipeline em aberto"
+          icon={<Kanban />}
+          href="/oportunidades"
+          value={moneyCompact(stats.open_value)}
+          hint={`${stats.open_count ?? 0} oportunidades · ponderado ${moneyCompact(stats.weighted_value)}`}
+        />
+        <Stat
+          label="Ganho no mês"
+          icon={<Trophy />}
+          tone="ok"
+          href="/oportunidades?view=lista&status=ganha"
+          value={moneyCompact(stats.won_month_value)}
+          hint={`${stats.won_month_count ?? 0} negócios fechados`}
+        />
+        <Stat
+          label="Perdidas no mês"
+          icon={<TrendingDown />}
+          tone="danger"
+          href="/oportunidades?view=lista&status=perdida"
+          value={stats.lost_month_count ?? 0}
+          hint="veja os motivos em Relatórios"
+        />
+        <Stat
+          label="Tarefas para hoje"
+          icon={<CheckSquare />}
+          tone="info"
+          href={stats.tasks_overdue ? "/tarefas?filtro=atrasadas" : "/tarefas?filtro=hoje"}
           value={stats.tasks_today ?? 0}
-          hint={stats.tasks_overdue ? <span className="text-danger">{stats.tasks_overdue} atrasadas</span> : "para hoje, nada atrasado"}
+          hint={stats.tasks_overdue ? <span className="font-medium text-danger">{stats.tasks_overdue} atrasadas</span> : "nada atrasado 🎉"}
         />
       </div>
 
@@ -131,7 +154,9 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
               action={<NewTaskButton members={members} currentUserId={user.id} />}
             />
             {(tasksRes.data ?? []).length === 0 ? (
-              <EmptyState title="Tudo em dia">Nenhuma tarefa para hoje.</EmptyState>
+              <EmptyState icon={<Sparkles />} title="Tudo em dia">
+                Nenhuma tarefa para hoje ou atrasada.
+              </EmptyState>
             ) : (
               <TaskList tasks={tasksRes.data as TaskRow[]} members={members} currentUserId={user.id} />
             )}
@@ -163,7 +188,15 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
           <Card>
             <CardHeader title="Agenda de hoje" action={<Link href="/agenda" className="text-sm text-brand hover:underline">Agenda</Link>} />
             {(apptRes.data ?? []).length === 0 ? (
-              <p className="p-4 text-sm text-muted">Nenhum compromisso hoje.</p>
+              <EmptyState
+                icon={<CalendarDays />}
+                title="Agenda livre hoje"
+                action={
+                  <LinkButton href="/agenda?novo=1" size="sm">
+                    Agendar compromisso
+                  </LinkButton>
+                }
+              />
             ) : (
               <ul className="divide-y divide-line">
                 {apptRes.data!.map((a) => {

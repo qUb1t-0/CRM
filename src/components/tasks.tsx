@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, Kanban, Pencil, Trash2 } from "lucide-react";
+import { Building2, Kanban, Pencil, Plus, Trash2 } from "lucide-react";
 import { ActionButton, ActionForm, FormActions, Modal, SubmitButton } from "@/components/forms";
 import { Badge, Field, Input, Select, Textarea, cn } from "@/components/ui";
 import { TaskCheckbox } from "@/components/task-checkbox";
@@ -78,9 +78,32 @@ export function TaskForm({
   );
 }
 
-export function NewTaskButton(props: { members: Member[]; currentUserId: string; entityId?: string | null; dealId?: string | null; size?: "sm" | "md"; variant?: "primary" | "secondary" }) {
+export function NewTaskButton({
+  size = "sm",
+  variant = "secondary",
+  autoOpen,
+  ...props
+}: {
+  members: Member[];
+  currentUserId: string;
+  entityId?: string | null;
+  dealId?: string | null;
+  size?: "sm" | "md";
+  variant?: "primary" | "secondary";
+  autoOpen?: boolean;
+}) {
   return (
-    <Modal title="Nova tarefa" trigger="Nova tarefa" triggerSize={props.size ?? "sm"} triggerVariant={props.variant ?? "secondary"}>
+    <Modal
+      title="Nova tarefa"
+      autoOpenParam={autoOpen ? "novo" : undefined}
+      trigger={
+        <>
+          <Plus className="size-4" /> Nova tarefa
+        </>
+      }
+      triggerSize={size}
+      triggerVariant={variant}
+    >
       <TaskForm action={createTask} {...props} submitLabel="Criar tarefa" />
     </Modal>
   );
@@ -108,7 +131,7 @@ export function TaskList({
       {tasks.map((t) => {
         const late = !t.done && isPast(t.due_at);
         return (
-          <li key={t.id} className="group flex items-start gap-3 px-4 py-3">
+          <li key={t.id} className={cn("group flex items-start gap-3 px-4 py-3 transition-colors hover:bg-surface-2/50", t.done && "opacity-70")}>
             <TaskCheckbox id={t.id} done={t.done} />
             <div className="min-w-0 flex-1">
               <p className={cn("text-sm font-medium", t.done && "text-muted line-through")}>{t.title}</p>
@@ -130,7 +153,7 @@ export function TaskList({
               </div>
             </div>
             <div className="flex shrink-0 gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
-              <Modal title="Editar tarefa" trigger={<Pencil className="size-3.5" />} triggerVariant="ghost" triggerSize="sm">
+              <Modal title="Editar tarefa" triggerLabel="Editar tarefa" trigger={<Pencil className="size-3.5" />} triggerVariant="ghost" triggerSize="sm">
                 <TaskForm action={updateTask.bind(null, t.id)} members={members} currentUserId={currentUserId} task={t} />
               </Modal>
               <ActionButton action={deleteTask.bind(null, t.id)} confirm="Excluir esta tarefa?" variant="ghost" title="Excluir tarefa">

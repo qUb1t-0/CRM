@@ -1,8 +1,8 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { CheckSquare } from "lucide-react";
 import { NewTaskButton, TaskList, type TaskRow } from "@/components/tasks";
-import { Card, EmptyState, PageHeader, Select, cn } from "@/components/ui";
+import { Card, EmptyState, PageHeader, Segmented, Select } from "@/components/ui";
+import { FilterForm } from "@/components/filter-form";
 import { getContext, getMembers } from "@/lib/session";
 import { addDays, dayStart, todayISO } from "@/lib/format";
 
@@ -67,23 +67,12 @@ export default async function TasksPage({ searchParams }: PageProps<"/tarefas">)
       <PageHeader
         title="Tarefas"
         description="Seus próximos passos com clientes e oportunidades."
-        actions={<NewTaskButton members={members} currentUserId={ctx.user.id} size="md" variant="primary" />}
+        actions={<NewTaskButton members={members} currentUserId={ctx.user.id} size="md" variant="primary" autoOpen />}
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <nav className="flex flex-wrap gap-1 rounded-md border border-line bg-surface p-0.5" aria-label="Filtro">
-          {FILTERS.map((f) => (
-            <Link
-              key={f.key}
-              href={link({ filtro: f.key })}
-              aria-current={filtro === f.key ? "page" : undefined}
-              className={cn("rounded px-2.5 py-1.5 text-sm", filtro === f.key ? "bg-surface-2 font-medium" : "text-muted hover:text-fg")}
-            >
-              {f.label}
-            </Link>
-          ))}
-        </nav>
-        <form action="/tarefas" className="flex gap-2">
+        <Segmented label="Filtro" value={filtro} items={FILTERS.map((f) => ({ value: f.key, label: f.label, href: link({ filtro: f.key }) }))} />
+        <FilterForm action="/tarefas" className="flex gap-2">
           <input type="hidden" name="filtro" value={filtro} />
           <Select name="resp" defaultValue={resp} className="w-auto" aria-label="Responsável">
             <option value="meus">Minhas tarefas</option>
@@ -94,8 +83,7 @@ export default async function TasksPage({ searchParams }: PageProps<"/tarefas">)
               </option>
             ))}
           </Select>
-          <button className="h-9 rounded-md border border-line bg-surface px-3 text-sm hover:bg-surface-2">Filtrar</button>
-        </form>
+        </FilterForm>
       </div>
 
       <Card>

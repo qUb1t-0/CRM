@@ -104,18 +104,22 @@ export function Kanban({
                 drop(stage.id);
               }}
               className={cn(
-                "flex w-[272px] flex-col rounded-xl border bg-surface-2/60 transition-colors",
-                over === stage.id ? "border-brand bg-brand-soft/40" : "border-line",
+                "flex w-[280px] flex-col rounded-xl border transition-colors",
+                over === stage.id ? "border-brand border-dashed bg-brand-soft/50" : "border-line bg-surface-2/50",
               )}
             >
-              <header className="border-b border-line px-3 py-2.5">
+              <header className="px-3 pt-3 pb-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="truncate text-sm font-semibold">{stage.name}</h3>
-                  <span className="tabular rounded-full bg-surface px-2 py-0.5 text-xs text-muted">{items.length}</span>
+                  <span className="tabular rounded-full bg-surface px-2 py-0.5 text-xs font-medium text-muted ring-1 ring-line">{items.length}</span>
                 </div>
-                <p className="tabular mt-0.5 text-xs text-muted">
-                  {money(total)} · {stage.probability}%
+                <p className="tabular mt-1 flex items-baseline justify-between text-xs text-muted">
+                  <span className="font-medium text-fg">{money(total)}</span>
+                  <span title="Probabilidade de fechamento">{stage.probability}%</span>
                 </p>
+                <div className="mt-2 h-1 overflow-hidden rounded-full bg-line" aria-hidden>
+                  <div className="h-full rounded-full bg-brand/70" style={{ width: `${stage.probability}%` }} />
+                </div>
               </header>
               <div className="flex min-h-24 flex-1 flex-col gap-2 p-2">
                 {items.map((d) => {
@@ -135,8 +139,9 @@ export function Kanban({
                         setOver(null);
                       }}
                       className={cn(
-                        "block rounded-lg border border-line bg-surface p-3 shadow-sm transition hover:border-brand/50 hover:shadow",
-                        dragging === d.id && "opacity-50",
+                        "block cursor-grab rounded-lg border border-line bg-surface p-3 shadow-sm transition-[border-color,box-shadow,opacity,transform] hover:-translate-y-px hover:border-line-strong hover:shadow-md active:cursor-grabbing",
+                        dragging === d.id && "rotate-1 opacity-40",
+                        late && "border-l-2 border-l-danger",
                       )}
                     >
                       <p className="line-clamp-2 text-sm font-medium">{d.title}</p>

@@ -1,10 +1,14 @@
 import { Logo } from "@/components/logo";
+import { ThemeSwitcher } from "@/components/theme";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="grid min-h-dvh lg:grid-cols-[1fr_1.1fr]">
       <main className="flex flex-col px-6 py-8 sm:px-12">
-        <Logo />
+        <div className="flex items-center justify-between">
+          <Logo />
+          <ThemeSwitcher compact />
+        </div>
         <div className="flex flex-1 items-center">
           <div className="mx-auto w-full max-w-sm py-10">{children}</div>
         </div>

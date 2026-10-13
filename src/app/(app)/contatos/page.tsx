@@ -2,7 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Building2, Download, Plus, Upload, User } from "lucide-react";
 import { Modal } from "@/components/forms";
-import { Card, EmptyState, LinkButton, PageHeader, Pagination, Select, Table, cn, inputClass } from "@/components/ui";
+import { Card, EmptyState, LinkButton, PageHeader, Pagination, SearchField, Select, Table } from "@/components/ui";
+import { FilterForm } from "@/components/filter-form";
 import { getContext, getCustomFields, getMembers } from "@/lib/session";
 import { sanitizeSearch } from "@/lib/forms";
 import { documentMask } from "@/lib/format";
@@ -61,15 +62,15 @@ export default async function EntitiesPage({ searchParams }: PageProps<"/contato
             <LinkButton href="/contatos/importar" variant="ghost">
               <Upload className="size-4" /> Importar
             </LinkButton>
-            <Modal title="Novo cadastro" triggerVariant="primary" wide trigger={<><Plus className="size-4" /> Novo cadastro</>}>
+            <Modal title="Novo cadastro" autoOpenParam="novo" triggerVariant="primary" wide trigger={<><Plus className="size-4" /> Novo cadastro</>}>
               <EntityForm action={createEntity} members={members} fields={fields} currentUserId={ctx.user.id} submitLabel="Cadastrar" />
             </Modal>
           </>
         }
       />
 
-      <form className="mb-4 flex flex-wrap gap-2" action="/contatos">
-        <input name="q" defaultValue={q} placeholder="Nome, e-mail ou documento…" className={cn(inputClass, "h-9 w-64")} />
+      <FilterForm className="mb-4 flex flex-wrap gap-2" action="/contatos">
+        <SearchField defaultValue={q} placeholder="Nome, e-mail ou documento…" />
         <Select name="tipo" defaultValue={kind ?? ""} className="w-auto" aria-label="Tipo">
           <option value="">Empresas e pessoas</option>
           <option value="empresa">Somente empresas</option>
@@ -79,8 +80,7 @@ export default async function EntitiesPage({ searchParams }: PageProps<"/contato
           <option value="todos">Todos</option>
           <option value="meus">Meus cadastros</option>
         </Select>
-        <button className="h-9 rounded-md border border-line bg-surface px-3 text-sm hover:bg-surface-2">Filtrar</button>
-      </form>
+      </FilterForm>
 
       <Card>
         {data && data.length > 0 ? (

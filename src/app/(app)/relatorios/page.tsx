@@ -1,7 +1,6 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { BarList, ColumnChart } from "@/components/progress";
-import { Avatar, Card, CardHeader, PageHeader, Stat, Table, cn } from "@/components/ui";
+import { Avatar, Card, CardHeader, PageHeader, Segmented, Stat, Table } from "@/components/ui";
 import { getContext, getMembers } from "@/lib/session";
 import { dayStart, money, moneyCompact, monthLabel, monthStartISO } from "@/lib/format";
 
@@ -50,17 +49,11 @@ export default async function ReportsPage({ searchParams }: PageProps<"/relatori
         title="Relatórios"
         description="Desempenho comercial: vendas, funil, perdas e equipe."
         actions={
-          <nav className="inline-flex rounded-md border border-line bg-surface p-0.5" aria-label="Período">
-            {PERIODS.map((p) => (
-              <Link
-                key={p.key}
-                href={`/relatorios?periodo=${p.key}`}
-                className={cn("rounded px-2.5 py-1.5 text-sm", String(months) === p.key ? "bg-surface-2 font-medium" : "text-muted hover:text-fg")}
-              >
-                {p.label}
-              </Link>
-            ))}
-          </nav>
+          <Segmented
+            label="Período"
+            value={String(months)}
+            items={PERIODS.map((p) => ({ value: p.key, label: p.label, href: `/relatorios?periodo=${p.key}` }))}
+          />
         }
       />
 

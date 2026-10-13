@@ -1,41 +1,84 @@
 @import "tailwindcss";
 
+/* Variante "dark:" do Tailwind segue o tema resolvido em <html data-theme> */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ---------- Tema claro (padrão) ---------- */
 :root {
-  --bg: #f6f5f2;
+  --bg: #f7f6f3;
   --surface: #ffffff;
-  --surface-2: #f1efea;
-  --line: #e4e1da;
-  --fg: #1c1a17;
-  --muted: #6b665d;
-  --brand: #c2780a;
+  --surface-2: #f2f0eb;
+  --surface-3: #e9e6df;
+  --line: #e6e2da;
+  --line-strong: #d6d1c6;
+  --fg: #1b1915;
+  --muted: #6b665c;
+  --brand: #b86e05;
+  --brand-hover: #a05f03;
   --brand-fg: #ffffff;
-  --brand-soft: #fbf1df;
+  --brand-soft: #fcf0dc;
   --ok: #15803d;
-  --ok-soft: #e6f4ea;
+  --ok-soft: #e5f4ea;
   --danger: #b42318;
   --danger-soft: #fdecea;
   --info: #1d4ed8;
   --info-soft: #e8eefc;
+  --shadow-sm: 0 1px 2px rgb(28 25 21 / 0.05);
+  --shadow-md: 0 1px 2px rgb(28 25 21 / 0.04), 0 4px 12px -2px rgb(28 25 21 / 0.08);
+  --shadow-lg: 0 12px 32px -8px rgb(28 25 21 / 0.22), 0 2px 6px rgb(28 25 21 / 0.06);
   color-scheme: light;
 }
 
+/* ---------- Tema escuro ---------- */
+:root[data-theme="dark"] {
+  --bg: #111110;
+  --surface: #1a1917;
+  --surface-2: #22211e;
+  --surface-3: #2b2a26;
+  --line: #2c2a26;
+  --line-strong: #3a3833;
+  --fg: #edece9;
+  --muted: #a19c92;
+  --brand: #eaa53c;
+  --brand-hover: #f2b65a;
+  --brand-fg: #1a1408;
+  --brand-soft: #362811;
+  --ok: #4ade80;
+  --ok-soft: #12301c;
+  --danger: #f87171;
+  --danger-soft: #3a1614;
+  --info: #93b4fd;
+  --info-soft: #172442;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 1px 2px rgb(0 0 0 / 0.35), 0 4px 14px -2px rgb(0 0 0 / 0.45);
+  --shadow-lg: 0 16px 40px -8px rgb(0 0 0 / 0.7), 0 2px 8px rgb(0 0 0 / 0.4);
+  color-scheme: dark;
+}
+
+/* Sem JavaScript: segue o sistema */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #121110;
-    --surface: #1b1a18;
-    --surface-2: #242320;
-    --line: #2f2d29;
-    --fg: #ecebe8;
-    --muted: #9c978d;
-    --brand: #e8a33a;
+  :root:not([data-theme]) {
+    --bg: #111110;
+    --surface: #1a1917;
+    --surface-2: #22211e;
+    --surface-3: #2b2a26;
+    --line: #2c2a26;
+    --line-strong: #3a3833;
+    --fg: #edece9;
+    --muted: #a19c92;
+    --brand: #eaa53c;
+    --brand-hover: #f2b65a;
     --brand-fg: #1a1408;
-    --brand-soft: #3a2b12;
+    --brand-soft: #362811;
     --ok: #4ade80;
-    --ok-soft: #13301d;
+    --ok-soft: #12301c;
     --danger: #f87171;
-    --danger-soft: #3b1715;
+    --danger-soft: #3a1614;
     --info: #93b4fd;
     --info-soft: #172442;
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-md: 0 1px 2px rgb(0 0 0 / 0.35), 0 4px 14px -2px rgb(0 0 0 / 0.45);
+    --shadow-lg: 0 16px 40px -8px rgb(0 0 0 / 0.7), 0 2px 8px rgb(0 0 0 / 0.4);
     color-scheme: dark;
   }
 }
@@ -44,10 +87,13 @@
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
   --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
   --color-fg: var(--fg);
   --color-muted: var(--muted);
   --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
   --color-brand-fg: var(--brand-fg);
   --color-brand-soft: var(--brand-soft);
   --color-ok: var(--ok);
@@ -56,14 +102,46 @@
   --color-danger-soft: var(--danger-soft);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   background: var(--bg);
   color: var(--fg);
-  font-feature-settings: "tnum" 0;
+}
+
+/* Troca de tema suave, sem animar a carga inicial */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease !important;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--brand) 28%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
 }
 
 .tabular {
@@ -71,22 +149,58 @@ body {
 }
 
 dialog::backdrop {
-  background: rgb(0 0 0 / 0.45);
+  background: rgb(10 9 8 / 0.5);
+  backdrop-filter: blur(2px);
 }
 
 dialog[open] {
-  animation: dialog-in 160ms ease-out;
+  animation: dialog-in 180ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+dialog.drawer[open] {
+  animation: drawer-in 220ms cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 
 @keyframes dialog-in {
   from {
     opacity: 0;
-    transform: translateY(6px) scale(0.98);
+    transform: translateY(8px) scale(0.98);
   }
 }
 
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.animate-pop {
+  animation: pop-in 140ms ease-out;
+}
+
+.animate-toast {
+  animation: toast-in 200ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  dialog[open] {
+  dialog[open],
+  dialog.drawer[open],
+  .animate-pop,
+  .animate-toast {
     animation: none;
   }
 }
@@ -95,8 +209,14 @@ dialog[open] {
   .no-print {
     display: none !important;
   }
-  body {
-    background: #fff;
-    color: #000;
+  :root,
+  :root[data-theme="dark"] {
+    --bg: #fff;
+    --surface: #fff;
+    --surface-2: #f4f4f4;
+    --line: #ddd;
+    --fg: #000;
+    --muted: #555;
+    color-scheme: light;
   }
 }

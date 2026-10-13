@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { FileText } from "lucide-react";
-import { Badge, Card, EmptyState, PageHeader, Table, cn } from "@/components/ui";
+import { Badge, Card, EmptyState, PageHeader, Segmented, Table } from "@/components/ui";
 import { getContext } from "@/lib/session";
 import { proposalTone } from "@/lib/labels";
 import { date, money } from "@/lib/format";
@@ -28,17 +28,13 @@ export default async function ProposalsPage({ searchParams }: PageProps<"/propos
   return (
     <>
       <PageHeader title="Propostas" description="Propostas comerciais geradas a partir das oportunidades." />
-      <nav className="mb-4 inline-flex flex-wrap gap-1 rounded-md border border-line bg-surface p-0.5" aria-label="Situação">
-        {STATUSES.map((s) => (
-          <Link
-            key={s}
-            href={`/propostas?status=${s}`}
-            className={cn("rounded px-2.5 py-1.5 text-sm capitalize", status === s ? "bg-surface-2 font-medium" : "text-muted hover:text-fg")}
-          >
-            {s}
-          </Link>
-        ))}
-      </nav>
+      <div className="mb-4">
+        <Segmented
+          label="Situação"
+          value={status}
+          items={STATUSES.map((s) => ({ value: s, label: s[0].toUpperCase() + s.slice(1), href: `/propostas?status=${s}` }))}
+        />
+      </div>
       <Card>
         {data && data.length > 0 ? (
           <Table>
