@@ -62,8 +62,9 @@ export async function setProposalStatus(id: string, status: string): Promise<Act
 }
 
 export async function deleteProposal(id: string): Promise<ActionState> {
-  const { supabase, org } = await getContext();
-  const { error } = await supabase.from("proposals").delete().eq("id", id).eq("org_id", org.id);
+  const { supabase } = await getContext();
+  // Exclusão reversível: vai para a lixeira (Configurações › Lixeira) por 60 dias
+  const { error } = await supabase.rpc("trash_move", { p_table: "proposals", p_id: id });
   if (error) return { error: dbError(error)! };
   revalidatePath("/", "layout");
   redirect("/propostas");

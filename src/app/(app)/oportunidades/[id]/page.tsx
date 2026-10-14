@@ -135,7 +135,8 @@ export default async function DealPage({ params }: PageProps<"/oportunidades/[id
           </Modal>
           <ActionButton
             action={deleteDeal.bind(null, deal.id)}
-            confirm="Excluir esta oportunidade? Itens, tarefas e propostas vinculadas também serão excluídos."
+            confirm="Mover esta oportunidade e suas propostas para a lixeira? Você pode recuperá-las em Configurações › Lixeira por até 60 dias."
+            confirmLabel="Mover para a lixeira"
             variant="ghost"
             size="md"
             title="Excluir oportunidade"

@@ -32,7 +32,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="min-h-full font-sans">
+      {/* suppressHydrationWarning: extensões do navegador (ex.: ColorZilla) injetam atributos no <body> */}
+      <body className="min-h-full font-sans" suppressHydrationWarning>
         {children}
         <Toaster />
       </body>

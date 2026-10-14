@@ -1,8 +1,10 @@
+import Link from "next/link";
 import type { Metadata } from "next";
+import { ChevronRight } from "lucide-react";
 import { ActionForm, SubmitButton } from "@/components/forms";
-import { Card, CardHeader, Field, Input } from "@/components/ui";
+import { Avatar, Card, CardHeader, Field, Input } from "@/components/ui";
 import { getContext } from "@/lib/session";
-import { updateOrganization, updateProfile } from "./actions";
+import { updateOrganization } from "./actions";
 
 export const metadata: Metadata = { title: "Configurações" };
 
@@ -25,15 +27,16 @@ export default async function SettingsPage() {
       </Card>
       <Card>
         <CardHeader title="Meu perfil" />
-        <ActionForm action={updateProfile} className="space-y-4 p-4">
-          <Field label="Nome" htmlFor="full_name">
-            <Input id="full_name" name="full_name" defaultValue={ctx.profile.name} required />
-          </Field>
-          <Field label="E-mail" htmlFor="email" hint="Para trocar a senha, use “Esqueci minha senha” na tela de login.">
-            <Input id="email" value={ctx.profile.email} disabled readOnly />
-          </Field>
-          <SubmitButton>Salvar</SubmitButton>
-        </ActionForm>
+        <Link href="/configuracoes/perfil" className="flex items-center gap-3 p-4 transition-colors hover:bg-surface-2/60">
+          <Avatar name={ctx.profile.name} src={ctx.profile.avatarUrl} size="lg" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium">{ctx.profile.name}</span>
+            <span className="block truncate text-xs text-muted">{ctx.profile.jobTitle ?? ctx.profile.email}</span>
+          </span>
+          <span className="inline-flex items-center gap-1 text-sm text-brand">
+            Editar perfil <ChevronRight className="size-4" />
+          </span>
+        </Link>
       </Card>
     </div>
   );

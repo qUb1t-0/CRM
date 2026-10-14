@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { SUPABASE_KEY, SUPABASE_URL } from "@/lib/supabase/env";
+import { isLockedPath } from "@/lib/features";
 
 const PUBLIC_PATHS = ["/login", "/cadastro", "/esqueci-senha", "/auth"];
 
@@ -34,6 +35,14 @@ export async function proxy(request: NextRequest) {
     url.pathname = "/login";
     url.search = pathname === "/" ? "" : `?next=${encodeURIComponent(pathname + request.nextUrl.search)}`;
     return NextResponse.redirect(url);
+  }
+
+  // Módulos bloqueados: bloqueia páginas e Server Actions dessas rotas
+  if (user && isLockedPath(pathname)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/bloqueado";
+    url.search = `?modulo=${encodeURIComponent(pathname.split("/")[1])}`;
+    return NextResponse.redirect(url, { status: 303 });
   }
 
   if (user && (pathname === "/login" || pathname === "/cadastro")) {

@@ -2,7 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Building2, Kanban, User, UserRound } from "lucide-react";
 import { Badge, Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
-import { getContext } from "@/lib/session";
+import { combineOr, getContext, getOwnerFilter, ownedByFilter } from "@/lib/session";
+import { SALES_LOCKED } from "@/lib/features";
 import { sanitizeSearch } from "@/lib/forms";
 import { money } from "@/lib/format";
 import { dealStatusLabel, dealStatusTone } from "@/lib/labels";
@@ -26,16 +27,24 @@ export default async function SearchPage({ searchParams }: PageProps<"/busca">) 
   }
 
   const pattern = `%${q}%`;
+  const ownerFilter = await getOwnerFilter();
+  const textOr = `name.ilike.${pattern},email.ilike.${pattern}`;
+  const entityOr = ownerFilter ? combineOr([textOr, ownedByFilter(["owner_id", "created_by"], ownerFilter)]) : textOr;
   const [entities, contacts, deals] = await Promise.all([
-    ctx.supabase.from("entities").select("id, name, kind, city, state").eq("org_id", ctx.org.id).or(`name.ilike.${pattern},email.ilike.${pattern}`).order("name").limit(20),
+    ctx.supabase.from("entities").select("id, name, kind, city, state").eq("org_id", ctx.org.id).or(entityOr).order("name").limit(20),
     ctx.supabase
       .from("contacts")
-      .select("id, name, email, job_title, entity:entities(id, name)")
+      .select("id, name, email, job_title, entity:entities!inner(id, name)")
       .eq("org_id", ctx.org.id)
       .or(`name.ilike.${pattern},email.ilike.${pattern}`)
       .order("name")
       .limit(20),
-    ctx.supabase.from("deals").select("id, title, value, status").eq("org_id", ctx.org.id).ilike("title", pattern).order("created_at", { ascending: false }).limit(20),
+    SALES_LOCKED
+      ? Promise.resolve({ data: [] as { id: string; title: string; value: number; status: string }[] })
+      : (ownerFilter
+          ? ctx.supabase.from("deals").select("id, title, value, status").eq("org_id", ctx.org.id).or(ownedByFilter(["owner_id", "created_by"], ownerFilter))
+          : ctx.supabase.from("deals").select("id, title, value, status").eq("org_id", ctx.org.id)
+        ).ilike("title", pattern).order("created_at", { ascending: false }).limit(20),
   ]);
 
   const total = (entities.data?.length ?? 0) + (contacts.data?.length ?? 0) + (deals.data?.length ?? 0);
@@ -48,7 +57,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/busca">) 
           <EmptyState title="Nada encontrado">Tente outro termo.</EmptyState>
         </Card>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className={SALES_LOCKED ? "grid gap-6 lg:grid-cols-2" : "grid gap-6 lg:grid-cols-3"}>
           <Card>
             <CardHeader title="Empresas e pessoas" />
             <ul className="divide-y divide-line">
@@ -84,6 +93,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/busca">) 
               {(contacts.data ?? []).length === 0 && <li className="px-4 py-3 text-sm text-muted">Nenhum.</li>}
             </ul>
           </Card>
+          {!SALES_LOCKED && (
           <Card>
             <CardHeader title="Oportunidades" />
             <ul className="divide-y divide-line">
@@ -100,6 +110,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/busca">) 
               {(deals.data ?? []).length === 0 && <li className="px-4 py-3 text-sm text-muted">Nenhuma.</li>}
             </ul>
           </Card>
+          )}
         </div>
       )}
     </>

@@ -19,6 +19,23 @@ Um CRM de vendas multiempresa, inspirado na análise funcional do NectarCRM (`RE
 | **Multiempresa** | Uma pessoa pode pertencer a várias "bases" e trocar entre elas pelo seletor da barra lateral. |
 | **Busca global** | Procura em empresas, pessoas de contato e oportunidades. |
 
+### Novidades da versão 1.0
+
+| Recurso | O que faz |
+|---|---|
+| **Perfil do cliente** | Layout no estilo Nectar: painel de informações (com botão de WhatsApp) e abas Feedbacks, Pessoas de contato, Oportunidades, Tarefas, Compromissos e Propostas. |
+| **Feedbacks** | Registro automático de cada alteração (campo, valor antigo → novo, quem fez e quando), mais um chat da equipe com **menções @** e atualização em tempo real. |
+| **Notificações** | Sininho em tempo real para menções e para clientes transferidos ao usuário. |
+| **Responsável** | Administradores transferem o cliente para outro usuário (opcionalmente com as tarefas em aberto), e a pessoa é notificada. A regra é aplicada no banco. |
+| **Cadastro de cliente** | Máscaras e validação de CPF/CNPJ (dígitos verificadores), e-mail e celular `(00) 0 0000-0000`. UF e Cidade encadeadas pela API de localidades do IBGE. |
+| **Filtros de contatos** | Painel lateral com Autor, Estado, Cidade, CPF/CNPJ, E-mail, Telefone e Segmento, todos na URL. A exportação respeita os filtros. |
+| **Filtro por responsável** | O administrador escolhe de quais usuários os dados aparecem em todo o sistema. |
+| **Lixeira** | Exclusão reversível de contatos, oportunidades, propostas, produtos e tarefas. Os itens ficam 60 dias e depois são apagados por um job diário (`pg_cron`). |
+| **Fotos** | Foto de perfil do usuário e foto do cliente, com mini editor de recorte e pré-visualização ao vivo, guardadas no Supabase Storage. |
+| **Meu perfil** | Foto, nome, cargo, e-mail (troca com confirmação), data de nascimento, celular e biografia. |
+| **Tema** | Claro, escuro ou automático pelo sistema, sem "piscar" ao carregar. |
+| **Seção Vendas bloqueada** | Controlada por `NEXT_PUBLIC_BLOQUEAR_VENDAS` (veja abaixo). |
+
 ### Como o relatório foi traduzido
 
 | No NectarCRM (relatório) | No Favo CRM |
@@ -34,7 +51,7 @@ Um CRM de vendas multiempresa, inspirado na análise funcional do NectarCRM (`RE
 ## Estrutura
 
 ```
-supabase/migrations/   # schema, RLS, triggers e RPCs (um único arquivo SQL)
+supabase/migrations/   # schema, RLS, triggers, RPCs e storage (aplicar em ordem)
 src/proxy.ts           # renovação da sessão e proteção das rotas
 src/lib/               # clientes Supabase, sessão/contexto, formatação pt-BR
 src/components/        # UI, formulários, timeline, tarefas, seletor de contato
@@ -48,7 +65,7 @@ src/app/api/exportar/  # exportação CSV
 ### 1. Supabase
 
 1. Crie um projeto em [supabase.com](https://supabase.com). A região `sa-east-1` (São Paulo) é a recomendada.
-2. Abra **SQL Editor**, cole o conteúdo de `supabase/migrations/20261013000000_init.sql` e execute. Com a CLI, o caminho é `supabase link` seguido de `supabase db push`.
+2. Aplique **todas** as migrações de `supabase/migrations/` em ordem de nome (do `init` até a `foto_cliente`), pelo **SQL Editor** ou pela CLI (`supabase link` seguido de `supabase db push`). Elas criam as tabelas, as regras de acesso (RLS), os buckets `avatars` e `entity-photos` e o job diário da lixeira (`pg_cron`).
 3. Em **Authentication › URL Configuration**:
    - **Site URL**: a URL da Vercel (por exemplo `https://seu-crm.vercel.app`).
    - **Redirect URLs**: adicione `https://seu-crm.vercel.app/auth/callback` e `http://localhost:3000/auth/callback`.
@@ -65,6 +82,7 @@ Copie `.env.example` para `.env.local` e preencha:
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Project Settings › API Keys › Publishable key (`sb_publishable_…`). A chave `anon` legada também funciona. |
 | `NEXT_PUBLIC_SITE_URL` | URL pública do site, usada nos links dos e-mails |
 | `NEXT_PUBLIC_GOOGLE_AUTH` | `true` para mostrar o botão "Entrar com Google" |
+| `NEXT_PUBLIC_BLOQUEAR_VENDAS` | `true` bloqueia a seção Vendas (Oportunidades, Propostas, Produtos e Metas). Em produção, o valor vem do arquivo versionado `.env.production`: para liberar, troque para `false` e faça push. |
 
 > A aplicação **não usa** a chave `service_role`. Todo acesso passa pela RLS com a sessão do usuário.
 

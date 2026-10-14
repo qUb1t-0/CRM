@@ -81,7 +81,7 @@ export default async function ProductsPage() {
                       <Modal title="Editar produto" triggerVariant="ghost" triggerSize="sm" trigger={<Pencil className="size-3.5" />}>
                         <ProductForm product={p} />
                       </Modal>
-                      <ActionButton action={deleteProduct.bind(null, p.id)} confirm={`Excluir ${p.name}?`} variant="ghost" title="Excluir">
+                      <ActionButton action={deleteProduct.bind(null, p.id)} confirm={`Mover ${p.name} para a lixeira? Você pode recuperar em Configurações › Lixeira por até 60 dias.`} confirmLabel="Mover para a lixeira" variant="ghost" title="Excluir">
                         <Trash2 className="size-3.5" />
                       </ActionButton>
                     </div>

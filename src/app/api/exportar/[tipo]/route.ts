@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getContext, getMembers } from "@/lib/session";
+import { getContext, getMembers, getOwnerFilter, ownedByFilter } from "@/lib/session";
+import { SALES_LOCKED } from "@/lib/features";
+import { applyContactFilters, parseContactFilters } from "@/lib/contact-filters";
 
 function csv(rows: (string | number | null | undefined)[][]) {
   const cell = (v: string | number | null | undefined) => {
@@ -13,31 +15,35 @@ function csv(rows: (string | number | null | undefined)[][]) {
 
 const num = (n: number | string | null) => (n == null ? "" : String(n).replace(".", ","));
 
-export async function GET(_req: NextRequest, ctxRoute: RouteContext<"/api/exportar/[tipo]">) {
+export async function GET(req: NextRequest, ctxRoute: RouteContext<"/api/exportar/[tipo]">) {
   const { tipo } = await ctxRoute.params;
   const ctx = await getContext();
   const members = await getMembers();
   const memberName = (id: string | null) => members.find((m) => m.id === id)?.name ?? "";
   let body: string;
 
+  const ownerFilter = await getOwnerFilter();
+
   if (tipo === "contatos") {
-    const { data } = await ctx.supabase
+    let q = ctx.supabase
       .from("entities")
       .select("name, kind, document, email, phone, website, city, state, segment, owner_id, created_at")
-      .eq("org_id", ctx.org.id)
-      .order("name")
-      .limit(10000);
+      .eq("org_id", ctx.org.id);
+    if (ownerFilter) q = q.or(ownedByFilter(["owner_id", "created_by"], ownerFilter));
+    // Mesmos filtros avançados da tela de Contatos (quando enviados na URL)
+    q = applyContactFilters(q, parseContactFilters(Object.fromEntries(req.nextUrl.searchParams)));
+    const { data } = await q.order("name").limit(10000);
     body = csv([
       ["nome", "tipo", "documento", "email", "telefone", "site", "cidade", "estado", "segmento", "responsavel", "criado_em"],
       ...(data ?? []).map((e) => [e.name, e.kind, e.document, e.email, e.phone, e.website, e.city, e.state, e.segment, memberName(e.owner_id), e.created_at.slice(0, 10)]),
     ]);
-  } else if (tipo === "oportunidades") {
-    const { data } = await ctx.supabase
+  } else if (tipo === "oportunidades" && !SALES_LOCKED) {
+    let q = ctx.supabase
       .from("deals")
       .select("title, value, status, expected_close, closed_at, source, owner_id, created_at, entity:entities(name), stage:stages(name), pipeline:pipelines(name), loss_reason:loss_reasons(name)")
-      .eq("org_id", ctx.org.id)
-      .order("created_at", { ascending: false })
-      .limit(10000);
+      .eq("org_id", ctx.org.id);
+    if (ownerFilter) q = q.or(ownedByFilter(["owner_id", "created_by"], ownerFilter));
+    const { data } = await q.order("created_at", { ascending: false }).limit(10000);
     body = csv([
       ["titulo", "empresa_pessoa", "funil", "etapa", "valor", "situacao", "previsao", "fechamento", "motivo_perda", "origem", "responsavel", "criado_em"],
       ...(data ?? []).map((d) => {

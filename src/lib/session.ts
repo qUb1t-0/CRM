@@ -45,14 +45,24 @@ export const getContext = cache(async () => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, email")
+    .select("full_name, email, avatar_url, job_title, phone, birth_date, bio")
     .eq("id", user.id)
     .single();
 
   return {
     supabase,
     user,
-    profile: { name: profile?.full_name || user.email || "Usuário", email: user.email ?? "" },
+    profile: {
+      name: profile?.full_name || user.email || "Usuário",
+      email: user.email ?? "",
+      avatarUrl: (profile?.avatar_url as string | null) ?? null,
+      jobTitle: (profile?.job_title as string | null) ?? null,
+      phone: (profile?.phone as string | null) ?? null,
+      birthDate: (profile?.birth_date as string | null) ?? null,
+      bio: (profile?.bio as string | null) ?? null,
+      // E-mail novo aguardando confirmação (troca de e-mail)
+      pendingEmail: user.new_email ?? null,
+    },
     org: { id: active.id, name: active.name },
     role: active.role,
     isAdmin: active.role === "admin",
@@ -67,19 +77,56 @@ export const getMembers = cache(async (): Promise<Member[]> => {
   const { data: rows } = await supabase.from("memberships").select("user_id, role").eq("org_id", org.id);
   const ids = (rows ?? []).map((r) => r.user_id);
   if (ids.length === 0) return [];
-  const { data: profiles } = await supabase.from("profiles").select("id, full_name, email").in("id", ids);
+  const { data: profiles } = await supabase.from("profiles").select("id, full_name, email, avatar_url, job_title").in("id", ids);
   return (rows ?? [])
     .map((r) => {
       const p = profiles?.find((x) => x.id === r.user_id);
       return {
         id: r.user_id as string,
         name: p?.full_name || p?.email || "Usuário",
+        avatarUrl: (p?.avatar_url as string | null) ?? null,
+        jobTitle: (p?.job_title as string | null) ?? null,
         email: p?.email ?? null,
         role: r.role as Role,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
 });
+
+export const OWNER_FILTER_COOKIE = "crm_resp";
+
+/**
+ * Filtro global por responsável (somente administradores).
+ * Retorna os IDs dos usuários selecionados, ou null quando não há filtro (todos).
+ * O cookie guarda "<org_id>:<id1>,<id2>"; IDs de quem não é membro da base são descartados.
+ */
+export const getOwnerFilter = cache(async (): Promise<string[] | null> => {
+  const { org, isAdmin } = await getContext();
+  if (!isAdmin) return null;
+  const raw = (await cookies()).get(OWNER_FILTER_COOKIE)?.value;
+  if (!raw) return null;
+  const [orgId, list] = raw.split(":");
+  if (orgId !== org.id || !list) return null;
+  const memberIds = new Set((await getMembers()).map((m) => m.id));
+  const ids = list.split(",").filter((id) => memberIds.has(id));
+  return ids.length > 0 && ids.length < memberIds.size ? ids : null;
+});
+
+/** Monta o filtro PostgREST "coluna_a in (...) ou coluna_b in (...)". */
+export function ownedByFilter(columns: string[], ids: string[]) {
+  const list = ids.join(",");
+  return columns.map((c) => `${c}.in.(${list})`).join(",");
+}
+
+/**
+ * Junta vários grupos "OU" num único filtro para .or(): (g1) E (g2) E ...
+ * Necessário porque duas chamadas .or() na mesma consulta não são combinadas de forma confiável.
+ */
+export function combineOr(groups: string[]) {
+  const valid = groups.filter(Boolean);
+  if (valid.length <= 1) return valid[0] ?? "";
+  return `and(${valid.map((g) => `or(${g})`).join(",")})`;
+}
 
 export const getPipelines = cache(async (): Promise<Pipeline[]> => {
   const { supabase, org } = await getContext();

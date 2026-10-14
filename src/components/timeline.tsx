@@ -11,6 +11,7 @@ import {
   UserRound,
   XCircle,
   ListTodo,
+  Trash2,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { ActionButton, ActionForm, SubmitButton } from "@/components/forms";
@@ -51,6 +52,10 @@ function describe(e: TimelineEvent): { icon: ReactNode; text: ReactNode } {
       return { icon: <PlusCircle className="size-4" />, text: <>cadastrou <strong className="font-medium">{p.name}</strong></> };
     case "tarefa_criada":
       return { icon: <ListTodo className="size-4" />, text: <>criou a tarefa {title}</> };
+    case "movido_lixeira":
+      return { icon: <Trash2 className="size-4 text-danger" />, text: <>moveu {p.tipo === "contato" ? "o cadastro" : "a oportunidade"} {title} para a lixeira</> };
+    case "restaurado":
+      return { icon: <RotateCcw className="size-4 text-ok" />, text: <>recuperou {p.tipo === "contato" ? "o cadastro" : "a oportunidade"} {title} da lixeira</> };
     case "tarefa_concluida":
       return { icon: <CheckCircle2 className="size-4 text-ok" />, text: <>concluiu a tarefa {title}</> };
     default:

@@ -1,12 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowRight, CalendarDays, CheckSquare, Kanban, Sparkles, TrendingDown, Trophy } from "lucide-react";
+import { AlarmClock, ArrowRight, Building2, CalendarDays, CheckSquare, Kanban, Sparkles, TrendingDown, Trophy } from "lucide-react";
+import { SALES_LOCKED } from "@/lib/features";
 import { BarList } from "@/components/progress";
 import { Progress } from "@/components/progress";
 import { NewTaskButton, TaskList, type TaskRow } from "@/components/tasks";
 import { Timeline, type TimelineEvent } from "@/components/timeline";
 import { Card, CardHeader, EmptyState, LinkButton, PageHeader, Segmented, Stat } from "@/components/ui";
-import { getContext, getMembers, getPipelines } from "@/lib/session";
+import { getContext, getMembers, getOwnerFilter, getPipelines, ownedByFilter } from "@/lib/session";
 import { addDays, dayStart, money, moneyCompact, monthStartISO, time, todayISO } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Início" };
@@ -27,14 +28,16 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
   const scope = sp.visao === "equipe" ? "equipe" : "meu";
   const ctx = await getContext();
   const { supabase, org, user } = ctx;
-  const userFilter = scope === "meu" ? user.id : null;
+  // Usuários considerados: filtro do administrador > "meus números" > equipe toda (null)
+  const ownerFilter = await getOwnerFilter();
+  const userIds: string[] | null = ownerFilter ?? (scope === "meu" ? [user.id] : null);
   const today = todayISO();
   const month = monthStartISO();
 
   const [members, pipelines, statsRes, tasksRes, eventsRes, apptRes, stageRes, goalRes] = await Promise.all([
     getMembers(),
     getPipelines(),
-    supabase.rpc("dashboard_stats", { p_org: org.id, p_user: userFilter }),
+    supabase.rpc("dashboard_stats_users", { p_org: org.id, p_users: userIds }),
     (() => {
       let q = supabase
         .from("tasks")
@@ -44,10 +47,14 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
         .lt("due_at", dayStart(addDays(today, 1)))
         .order("due_at")
         .limit(8);
-      if (userFilter) q = q.eq("assignee_id", userFilter);
+      if (userIds) q = q.in("assignee_id", userIds);
       return q;
     })(),
-    supabase.from("timeline_events").select("*").eq("org_id", org.id).order("created_at", { ascending: false }).limit(12),
+    (() => {
+      let q = supabase.from("timeline_events").select("*").eq("org_id", org.id);
+      if (ownerFilter) q = q.in("actor_id", ownerFilter);
+      return q.order("created_at", { ascending: false }).limit(12);
+    })(),
     (() => {
       let q = supabase
         .from("appointments")
@@ -56,22 +63,32 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
         .gte("starts_at", dayStart(today))
         .lt("starts_at", dayStart(addDays(today, 1)))
         .order("starts_at");
-      if (userFilter) q = q.eq("owner_id", userFilter);
+      if (userIds) q = q.in("owner_id", userIds);
       return q;
     })(),
     (() => {
       let q = supabase.from("deals").select("stage_id, value").eq("org_id", org.id).eq("status", "aberta").limit(5000);
-      if (userFilter) q = q.eq("owner_id", userFilter);
+      if (userIds) q = q.in("owner_id", userIds);
       return q;
     })(),
     (() => {
       const q = supabase.from("goals").select("target").eq("org_id", org.id).eq("month", month);
-      return (userFilter ? q.eq("user_id", userFilter) : q.is("user_id", null)).maybeSingle();
+      return userIds ? q.in("user_id", userIds) : q.is("user_id", null);
     })(),
   ]);
 
+  let entityCount: number | null = null;
+  if (SALES_LOCKED) {
+    let q = supabase.from("entities").select("id", { count: "exact", head: true }).eq("org_id", org.id);
+    if (ownerFilter) q = q.or(ownedByFilter(["owner_id", "created_by"], ownerFilter));
+    else if (userIds) q = q.in("owner_id", userIds);
+    entityCount = (await q).count;
+  }
+
   const stats = (statsRes.data ?? {}) as Partial<Stats>;
-  const goal = Number(goalRes.data?.target ?? 0);
+  // Meta: individual, soma das metas dos usuários filtrados, ou meta da equipe
+  const goal = (goalRes.data ?? []).reduce((acc, g) => acc + Number(g.target), 0);
+  const filteredNames = ownerFilter?.map((id) => members.find((m) => m.id === id)?.name ?? "Usuário") ?? [];
 
   const pipeline = pipelines[0];
   const funnel = (pipeline?.stages ?? []).map((s) => {
@@ -87,9 +104,15 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
     <>
       <PageHeader
         title={`${greeting}, ${firstName}`}
-        description={scope === "meu" ? "Seus números e o que precisa de atenção hoje." : `Visão geral da equipe ${org.name}.`}
+        description={
+          ownerFilter
+            ? `Números de ${filteredNames.length === 1 ? filteredNames[0] : `${filteredNames.length} usuários selecionados`}.`
+            : scope === "meu"
+              ? "Seus números e o que precisa de atenção hoje."
+              : `Visão geral da equipe ${org.name}.`
+        }
         actions={
-          <Segmented
+          !ownerFilter && <Segmented
             label="Visão"
             value={scope}
             items={[
@@ -100,6 +123,40 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
         }
       />
 
+      {SALES_LOCKED ? (
+        <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Stat
+            label="Tarefas para hoje"
+            icon={<CheckSquare />}
+            tone="info"
+            href="/tarefas?filtro=hoje"
+            value={stats.tasks_today ?? 0}
+            hint="pendentes no dia"
+          />
+          <Stat
+            label="Tarefas atrasadas"
+            icon={<AlarmClock />}
+            tone={stats.tasks_overdue ? "danger" : "ok"}
+            href="/tarefas?filtro=atrasadas"
+            value={stats.tasks_overdue ?? 0}
+            hint={stats.tasks_overdue ? "precisam de atenção" : "nada atrasado 🎉"}
+          />
+          <Stat
+            label="Compromissos hoje"
+            icon={<CalendarDays />}
+            href="/agenda"
+            value={(apptRes.data ?? []).length}
+            hint="na agenda"
+          />
+          <Stat
+            label="Contatos cadastrados"
+            icon={<Building2 />}
+            href="/contatos"
+            value={(entityCount ?? 0).toLocaleString("pt-BR")}
+            hint={ownerFilter ? "cadastrados ou sob responsabilidade" : scope === "meu" ? "sob sua responsabilidade" : "empresas e pessoas"}
+          />
+        </div>
+      ) : (
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat
           label="Pipeline em aberto"
@@ -133,11 +190,12 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
           hint={stats.tasks_overdue ? <span className="font-medium text-danger">{stats.tasks_overdue} atrasadas</span> : "nada atrasado 🎉"}
         />
       </div>
+      )}
 
-      {goal > 0 && (
+      {goal > 0 && !SALES_LOCKED && (
         <Card className="mb-6 p-4">
           <div className="mb-2 flex items-baseline justify-between text-sm">
-            <span className="font-medium">Meta do mês {scope === "meu" ? "(sua)" : "(equipe)"}</span>
+            <span className="font-medium">Meta do mês {ownerFilter ? "(usuários filtrados)" : scope === "meu" ? "(sua)" : "(equipe)"}</span>
             <span className="tabular text-muted">
               {money(stats.won_month_value)} de {money(goal)} · {Math.round((Number(stats.won_month_value ?? 0) / goal) * 100)}%
             </span>
@@ -167,7 +225,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
             </div>
           </Card>
 
-          {pipeline && (
+          {pipeline && !SALES_LOCKED && (
             <Card>
               <CardHeader
                 title={`Funil · ${pipeline.name}`}

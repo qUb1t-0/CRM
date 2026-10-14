@@ -6,10 +6,12 @@ import { cn } from "@/components/ui";
 
 const tabs = [
   { href: "/configuracoes", label: "Geral" },
+  { href: "/configuracoes/perfil", label: "Meu perfil" },
   { href: "/configuracoes/usuarios", label: "Usuários" },
   { href: "/configuracoes/funis", label: "Funis e etapas" },
   { href: "/configuracoes/motivos", label: "Motivos de perda" },
   { href: "/configuracoes/campos", label: "Campos personalizados" },
+  { href: "/configuracoes/lixeira", label: "Lixeira" },
 ];
 
 export function SettingsTabs() {

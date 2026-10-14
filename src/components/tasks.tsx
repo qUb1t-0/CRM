@@ -156,7 +156,7 @@ export function TaskList({
               <Modal title="Editar tarefa" triggerLabel="Editar tarefa" trigger={<Pencil className="size-3.5" />} triggerVariant="ghost" triggerSize="sm">
                 <TaskForm action={updateTask.bind(null, t.id)} members={members} currentUserId={currentUserId} task={t} />
               </Modal>
-              <ActionButton action={deleteTask.bind(null, t.id)} confirm="Excluir esta tarefa?" variant="ghost" title="Excluir tarefa">
+              <ActionButton action={deleteTask.bind(null, t.id)} confirm="Mover esta tarefa para a lixeira? Você pode recuperá-la em Configurações › Lixeira por até 60 dias." confirmLabel="Mover para a lixeira" variant="ghost" title="Excluir tarefa">
                 <Trash2 className="size-3.5" />
               </ActionButton>
             </div>

@@ -55,9 +55,10 @@ export async function toggleTask(id: string, done: boolean): Promise<ActionState
 }
 
 export async function deleteTask(id: string): Promise<ActionState> {
-  const { supabase, org } = await getContext();
-  const { error } = await supabase.from("tasks").delete().eq("id", id).eq("org_id", org.id);
+  const { supabase } = await getContext();
+  // Exclusão reversível: vai para a lixeira (Configurações › Lixeira) por 60 dias
+  const { error } = await supabase.rpc("trash_move", { p_table: "tasks", p_id: id });
   if (error) return { error: dbError(error)! };
   revalidatePath("/", "layout");
-  return { ok: true, message: "Tarefa excluída." };
+  return { ok: true, message: "Tarefa movida para a lixeira." };
 }

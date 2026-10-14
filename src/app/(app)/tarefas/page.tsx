@@ -3,7 +3,7 @@ import { CheckSquare } from "lucide-react";
 import { NewTaskButton, TaskList, type TaskRow } from "@/components/tasks";
 import { Card, EmptyState, PageHeader, Segmented, Select } from "@/components/ui";
 import { FilterForm } from "@/components/filter-form";
-import { getContext, getMembers } from "@/lib/session";
+import { getContext, getMembers, getOwnerFilter, ownedByFilter } from "@/lib/session";
 import { addDays, dayStart, todayISO } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Tarefas" };
@@ -22,7 +22,7 @@ export default async function TasksPage({ searchParams }: PageProps<"/tarefas">)
   const resp = typeof sp.resp === "string" ? sp.resp : "meus";
 
   const ctx = await getContext();
-  const members = await getMembers();
+  const [members, ownerFilter] = await Promise.all([getMembers(), getOwnerFilter()]);
   const today = todayISO();
   const now = new Date().toISOString();
 
@@ -31,7 +31,9 @@ export default async function TasksPage({ searchParams }: PageProps<"/tarefas">)
     .select("*, entity:entities(id, name), deal:deals(id, title)")
     .eq("org_id", ctx.org.id);
 
-  if (resp === "meus") query = query.eq("assignee_id", ctx.user.id);
+  // Filtro do administrador: tarefas atribuídas aos usuários ou criadas por eles
+  if (ownerFilter) query = query.or(ownedByFilter(["assignee_id", "created_by"], ownerFilter));
+  else if (resp === "meus") query = query.eq("assignee_id", ctx.user.id);
   else if (resp !== "todos") query = query.eq("assignee_id", resp);
 
   switch (filtro) {
@@ -72,7 +74,7 @@ export default async function TasksPage({ searchParams }: PageProps<"/tarefas">)
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Segmented label="Filtro" value={filtro} items={FILTERS.map((f) => ({ value: f.key, label: f.label, href: link({ filtro: f.key }) }))} />
-        <FilterForm action="/tarefas" className="flex gap-2">
+        {!ownerFilter && (<FilterForm action="/tarefas" className="flex gap-2">
           <input type="hidden" name="filtro" value={filtro} />
           <Select name="resp" defaultValue={resp} className="w-auto" aria-label="Responsável">
             <option value="meus">Minhas tarefas</option>
@@ -83,7 +85,7 @@ export default async function TasksPage({ searchParams }: PageProps<"/tarefas">)
               </option>
             ))}
           </Select>
-        </FilterForm>
+        </FilterForm>)}
       </div>
 
       <Card>

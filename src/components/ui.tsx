@@ -41,8 +41,13 @@ export function LinkButton({
 export const inputClass =
   "block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg shadow-sm transition-[border-color,box-shadow] placeholder:text-muted/70 hover:border-line-strong focus:border-brand focus:ring-3 focus:ring-brand/20 focus:outline-none disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-70";
 
+/** Remove o "w-full" padrão quando o componente recebe uma largura própria (ex.: "w-auto", "w-48"). */
+function baseInput(className?: string) {
+  return className && /(^|\s)([a-z]+:)?w-/.test(className) ? inputClass.replace(" w-full", "") : inputClass;
+}
+
 export function Input({ className, ...props }: ComponentProps<"input">) {
-  return <input className={cn(inputClass, "h-9", className)} {...props} />;
+  return <input className={cn(baseInput(className), "h-9", className)} {...props} />;
 }
 
 /** Campo de busca de filtros (name="q"), com ícone; Enter aplica. */
@@ -63,7 +68,7 @@ export function Textarea({ className, ...props }: ComponentProps<"textarea">) {
 }
 
 export function Select({ className, ...props }: ComponentProps<"select">) {
-  return <select className={cn(inputClass, "h-9 cursor-pointer pr-8", className)} {...props} />;
+  return <select className={cn(baseInput(className), "h-9 cursor-pointer pr-8", className)} {...props} />;
 }
 
 export function Field({
@@ -210,17 +215,34 @@ function toneFor(name: string) {
   return AVATAR_TONES[h % AVATAR_TONES.length];
 }
 
-export function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md" | "lg" }) {
+export function Avatar({
+  name,
+  size = "md",
+  src,
+  className,
+}: {
+  name: string;
+  size?: "sm" | "md" | "lg" | "xl";
+  /** URL da foto de perfil; sem foto, mostra as iniciais. */
+  src?: string | null;
+  className?: string;
+}) {
+  const sizeClass = cn(
+    size === "xl" && "size-24 text-2xl",
+    size === "lg" && "size-10 text-sm",
+    size === "md" && "size-8 text-xs",
+    size === "sm" && "size-6 text-[10px]",
+  );
+  if (src) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- foto vinda do Supabase Storage, já redimensionada no envio
+      <img src={src} alt={name} title={name} loading="lazy" className={cn("shrink-0 rounded-full object-cover ring-1 ring-line", sizeClass, className)} />
+    );
+  }
   return (
     <span
       title={name}
-      className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full font-semibold",
-        toneFor(name),
-        size === "lg" && "size-10 text-sm",
-        size === "md" && "size-8 text-xs",
-        size === "sm" && "size-6 text-[10px]",
-      )}
+      className={cn("inline-flex shrink-0 items-center justify-center rounded-full font-semibold", toneFor(name), sizeClass, className)}
     >
       {initials(name) || "?"}
     </span>

@@ -22,12 +22,12 @@ export default async function UsersPage() {
         <ul className="divide-y divide-line">
           {members.map((m) => (
             <li key={m.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-              <Avatar name={m.name} />
+              <Avatar name={m.name} src={m.avatarUrl} />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium">
                   {m.name} {m.id === ctx.user.id && <span className="text-muted">(você)</span>}
                 </p>
-                <p className="truncate text-xs text-muted">{m.email}</p>
+                <p className="truncate text-xs text-muted">{[m.jobTitle, m.email].filter(Boolean).join(" · ")}</p>
               </div>
               {ctx.isAdmin && m.id !== ctx.user.id ? (
                 <div className="flex items-center gap-1">

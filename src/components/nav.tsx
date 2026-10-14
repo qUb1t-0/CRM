@@ -13,6 +13,7 @@ import {
   FileText,
   Home,
   Kanban,
+  Lock,
   LogOut,
   Menu as MenuIcon,
   Settings,
@@ -25,6 +26,7 @@ import { LogoMark } from "@/components/logo";
 import { Menu, menuItemClass } from "@/components/menu";
 import { OrgSwitcher } from "@/components/org-switcher";
 import { ThemeSwitcher } from "@/components/theme";
+import { SALES_LOCKED, isLockedPath } from "@/lib/features";
 
 const sections = [
   {
@@ -61,11 +63,33 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
       {sections.map((section, i) => (
         <div key={i}>
           {section.label && (
-            <p className="mb-1 px-2.5 text-[11px] font-semibold tracking-wider text-muted/80 uppercase">{section.label}</p>
+            <p className="mb-1 flex items-center gap-1.5 px-2.5 text-[11px] font-semibold tracking-wider text-muted/80 uppercase">
+              {section.label}
+              {section.label === "Vendas" && SALES_LOCKED && (
+                <span className="rounded bg-surface-2 px-1.5 py-px text-[10px] font-medium tracking-normal normal-case ring-1 ring-line">
+                  Em breve
+                </span>
+              )}
+            </p>
           )}
           <ul className="flex flex-col gap-0.5">
             {section.items.map(({ href, label, icon: Icon }) => {
               const active = href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+              if (isLockedPath(href)) {
+                return (
+                  <li key={href}>
+                    <span
+                      aria-disabled="true"
+                      title="Bloqueado por enquanto"
+                      className="flex cursor-not-allowed items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-sm text-muted/50 select-none"
+                    >
+                      <Icon className="size-4 shrink-0" />
+                      <span className="flex-1">{label}</span>
+                      <Lock className="size-3.5" aria-label="Bloqueado" />
+                    </span>
+                  </li>
+                );
+              }
               return (
                 <li key={href}>
                   <Link
@@ -91,7 +115,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-function UserMenu({ name, email, role, side = "top" }: { name: string; email: string; role: string; side?: "top" | "bottom" }) {
+function UserMenu({ name, email, role, avatarUrl, side = "top" }: { name: string; email: string; role: string; avatarUrl: string | null; side?: "top" | "bottom" }) {
   return (
     <Menu
       side={side}
@@ -101,7 +125,7 @@ function UserMenu({ name, email, role, side = "top" }: { name: string; email: st
       buttonClassName="flex w-full items-center gap-2.5 rounded-lg p-2 text-left transition-colors hover:bg-surface-2"
       button={
         <>
-          <Avatar name={name} />
+          <Avatar name={name} src={avatarUrl} />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-medium">{name}</span>
             <span className="block truncate text-xs text-muted">{role}</span>
@@ -119,7 +143,7 @@ function UserMenu({ name, email, role, side = "top" }: { name: string; email: st
         <ThemeSwitcher className="w-full" />
       </div>
       <div className="my-1 h-px bg-line" />
-      <Link href="/configuracoes" className={menuItemClass}>
+      <Link href="/configuracoes/perfil" className={menuItemClass}>
         <UserRound /> Meu perfil
       </Link>
       <Link href="/configuracoes/usuarios" className={menuItemClass}>
@@ -139,13 +163,12 @@ type ShellProps = {
   orgs: { id: string; name: string }[];
   activeId: string;
   userName: string;
+  userAvatar: string | null;
   userEmail: string;
   roleLabel: string;
 };
 
 export function Sidebar(props: ShellProps) {
-  const pathname = usePathname();
-  const settingsActive = pathname.startsWith("/configuracoes");
   return (
     <>
       <div className="px-3 pb-4">
@@ -154,18 +177,8 @@ export function Sidebar(props: ShellProps) {
       <div className="flex-1 overflow-y-auto pb-4">
         <NavLinks />
       </div>
-      <div className="space-y-1 border-t border-line p-3">
-        <Link
-          href="/configuracoes"
-          aria-current={settingsActive ? "page" : undefined}
-          className={cn(
-            "flex items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-sm transition-colors",
-            settingsActive ? "bg-brand-soft font-medium text-brand" : "text-muted hover:bg-surface-2 hover:text-fg",
-          )}
-        >
-          <Settings className="size-4" /> Configurações
-        </Link>
-        <UserMenu name={props.userName} email={props.userEmail} role={props.roleLabel} />
+      <div className="border-t border-line p-3">
+        <UserMenu name={props.userName} email={props.userEmail} role={props.roleLabel} avatarUrl={props.userAvatar} />
       </div>
     </>
   );

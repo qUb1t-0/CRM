@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { FileText } from "lucide-react";
 import { Badge, Card, EmptyState, PageHeader, Segmented, Table } from "@/components/ui";
-import { getContext } from "@/lib/session";
+import { getContext, getMembers, getOwnerFilter } from "@/lib/session";
 import { proposalTone } from "@/lib/labels";
 import { date, money } from "@/lib/format";
 
@@ -15,14 +15,17 @@ export default async function ProposalsPage({ searchParams }: PageProps<"/propos
   const sp = await searchParams;
   const status = typeof sp.status === "string" && STATUSES.includes(sp.status) ? sp.status : "todas";
   const ctx = await getContext();
+  const [members, ownerFilter] = await Promise.all([getMembers(), getOwnerFilter()]);
 
   let query = ctx.supabase
     .from("proposals")
-    .select("id, number, title, status, total, valid_until, created_at, deal:deals(id, title, entity:entities(name))")
+    .select("id, number, title, status, total, valid_until, created_at, created_by, deal:deals(id, title, entity:entities(name))")
     .eq("org_id", ctx.org.id)
     .order("number", { ascending: false })
     .limit(200);
   if (status !== "todas") query = query.eq("status", status);
+  if (ownerFilter) query = query.in("created_by", ownerFilter);
+  const memberName = (id: string | null) => members.find((m) => m.id === id)?.name ?? "—";
   const { data } = await query;
 
   return (
@@ -43,6 +46,7 @@ export default async function ProposalsPage({ searchParams }: PageProps<"/propos
                 <th>Nº</th>
                 <th>Proposta</th>
                 <th>Cliente</th>
+                <th>Gerada por</th>
                 <th className="text-right!">Total</th>
                 <th>Validade</th>
                 <th>Criada</th>
@@ -61,6 +65,7 @@ export default async function ProposalsPage({ searchParams }: PageProps<"/propos
                       </Link>
                     </td>
                     <td className="text-muted">{deal?.entity?.name ?? "—"}</td>
+                    <td className="text-muted">{memberName(p.created_by)}</td>
                     <td className="tabular text-right">{money(p.total)}</td>
                     <td className="tabular text-muted">{date(p.valid_until)}</td>
                     <td className="tabular text-muted">{date(p.created_at)}</td>

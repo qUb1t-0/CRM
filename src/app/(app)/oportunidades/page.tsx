@@ -4,7 +4,7 @@ import { Download, Kanban as KanbanIcon, List, Plus } from "lucide-react";
 import { Modal } from "@/components/forms";
 import { Badge, Card, EmptyState, LinkButton, Pagination, SearchField, Segmented, Select, Table } from "@/components/ui";
 import { FilterForm } from "@/components/filter-form";
-import { getContext, getCustomFields, getMembers, getPipelines } from "@/lib/session";
+import { getContext, getCustomFields, getMembers, getOwnerFilter, getPipelines, ownedByFilter } from "@/lib/session";
 import { sanitizeSearch } from "@/lib/forms";
 import { date, money } from "@/lib/format";
 import { createDeal } from "./actions";
@@ -45,7 +45,9 @@ export default async function DealsPage({ searchParams }: PageProps<"/oportunida
     .eq("org_id", ctx.org.id);
 
   if (pipeline) query = query.eq("pipeline_id", pipeline.id);
-  if (resp === "meus") query = query.eq("owner_id", ctx.user.id);
+  const ownerFilter = await getOwnerFilter();
+  if (ownerFilter) query = query.or(ownedByFilter(["owner_id", "created_by"], ownerFilter));
+  else if (resp === "meus") query = query.eq("owner_id", ctx.user.id);
   else if (resp !== "todos") query = query.eq("owner_id", resp);
   if (q) query = query.ilike("title", `%${q}%`);
 
@@ -116,15 +118,17 @@ export default async function DealsPage({ searchParams }: PageProps<"/oportunida
             ))}
           </Select>
         )}
-        <Select name="resp" defaultValue={resp} className="w-auto" aria-label="Responsável">
-          <option value="todos">Todos os responsáveis</option>
-          <option value="meus">Minhas oportunidades</option>
-          {members.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.name}
-            </option>
-          ))}
-        </Select>
+        {!ownerFilter && (
+          <Select name="resp" defaultValue={resp} className="w-auto" aria-label="Responsável">
+            <option value="todos">Todos os responsáveis</option>
+            <option value="meus">Minhas oportunidades</option>
+            {members.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </Select>
+        )}
         {view === "lista" && (
           <Select name="status" defaultValue={status} className="w-auto" aria-label="Situação">
             <option value="aberta">Em aberto</option>

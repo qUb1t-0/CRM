@@ -28,14 +28,6 @@ export async function updateOrganization(_: ActionState, fd: FormData): Promise<
   return error ? { error: dbError(error)! } : ok("Empresa atualizada.");
 }
 
-export async function updateProfile(_: ActionState, fd: FormData): Promise<ActionState> {
-  const { supabase, user } = await getContext();
-  const name = str(fd, "full_name");
-  if (!name) return { error: "Informe seu nome." };
-  const { error } = await supabase.from("profiles").update({ full_name: name }).eq("id", user.id);
-  return error ? { error: dbError(error)! } : ok("Perfil atualizado.");
-}
-
 // ---------- Usuários ----------
 export async function inviteMember(_: ActionState, fd: FormData): Promise<ActionState> {
   const ctx = await admin();

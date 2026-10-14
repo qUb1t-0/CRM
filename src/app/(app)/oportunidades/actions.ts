@@ -129,8 +129,9 @@ export async function reopenDeal(id: string): Promise<ActionState> {
 }
 
 export async function deleteDeal(id: string): Promise<ActionState> {
-  const { supabase, org } = await getContext();
-  const { error } = await supabase.from("deals").delete().eq("id", id).eq("org_id", org.id);
+  const { supabase } = await getContext();
+  // Exclusão reversível: vai para a lixeira (Configurações › Lixeira) por 60 dias
+  const { error } = await supabase.rpc("trash_move", { p_table: "deals", p_id: id });
   if (error) return { error: dbError(error)! };
   revalidatePath("/", "layout");
   redirect("/oportunidades");

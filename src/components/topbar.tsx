@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 import { Building2, CalendarPlus, CheckSquare, Kanban, Plus, Search } from "lucide-react";
 import { Kbd, buttonClass, cn } from "@/components/ui";
 import { Menu, menuItemClass } from "@/components/menu";
+import { isLockedPath } from "@/lib/features";
 
 /** Busca global: foco com "/" ou Ctrl/⌘+K. */
 export function SearchBox() {
@@ -54,7 +55,9 @@ const CREATE = [
   { href: "/contatos?novo=1", label: "Empresa ou pessoa", hint: "N C", icon: Building2 },
   { href: "/tarefas?novo=1", label: "Tarefa", hint: "N T", icon: CheckSquare },
   { href: "/agenda?novo=1", label: "Compromisso", hint: "N A", icon: CalendarPlus },
-];
+].filter((i) => !isLockedPath(i.href.split("?")[0]));
+
+const SHORTCUTS: Record<string, string> = Object.fromEntries(CREATE.map((i) => [i.hint.split(" ")[1].toLowerCase(), i.href]));
 
 /** Menu "Novo" com atalhos de teclado em sequência (N e depois O/C/T/A). */
 export function QuickCreate() {
@@ -75,10 +78,9 @@ export function QuickCreate() {
       }
       if (armed) {
         armed = false;
-        const map: Record<string, string> = { o: CREATE[0].href, c: CREATE[1].href, t: CREATE[2].href, a: CREATE[3].href };
-        if (map[key]) {
+        if (SHORTCUTS[key]) {
           e.preventDefault();
-          router.push(map[key]);
+          router.push(SHORTCUTS[key]);
         }
       }
     };

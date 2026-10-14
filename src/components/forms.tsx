@@ -158,7 +158,7 @@ export function ActionButton({
 }) {
   const [pending, setPending] = useState(false);
   const confirmRef = useRef<HTMLDialogElement>(null);
-  const isDelete = /excluir|remover|cancelar/i.test(confirmText ?? "") || variant === "danger";
+  const isDelete = /excluir|remover|cancelar|lixeira/i.test(confirmText ?? "") || variant === "danger";
 
   async function run() {
     setPending(true);

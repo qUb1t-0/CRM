@@ -1,80 +1,15 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ChevronLeft, ChevronRight, MapPin, Pencil, Plus, Trash2 } from "lucide-react";
-import { EntityPicker } from "@/components/entity-picker";
-import { ActionButton, ActionForm, FormActions, Modal, SubmitButton } from "@/components/forms";
-import { Card, CardHeader, EmptyState, Field, Input, LinkButton, PageHeader, Select, Textarea, cn } from "@/components/ui";
-import { getContext, getMembers } from "@/lib/session";
-import { addDays, dayStart, monthLabel, monthStartISO, time, toLocalInput, todayISO, zonedParts } from "@/lib/format";
-import type { ActionState, Member } from "@/lib/types";
+import { AppointmentForm, type Appt } from "@/components/appointment-form";
+import { ActionButton, Modal } from "@/components/forms";
+import { Card, CardHeader, EmptyState, LinkButton, PageHeader, cn } from "@/components/ui";
+import { getContext, getMembers, getOwnerFilter, ownedByFilter } from "@/lib/session";
+import { addDays, dayStart, monthLabel, monthStartISO, time, todayISO, zonedParts } from "@/lib/format";
 import { createAppointment, deleteAppointment, updateAppointment } from "./actions";
 
 export const metadata: Metadata = { title: "Agenda" };
 
-type Appt = {
-  id: string;
-  title: string;
-  description: string | null;
-  location: string | null;
-  starts_at: string;
-  ends_at: string;
-  owner_id: string | null;
-  entity_id: string | null;
-  entity: { id: string; name: string; kind: "empresa" | "pessoa" } | null;
-};
-
-function AppointmentForm({
-  action,
-  orgId,
-  members,
-  currentUserId,
-  appt,
-  defaultStart,
-}: {
-  action: (s: ActionState, fd: FormData) => Promise<ActionState>;
-  orgId: string;
-  members: Member[];
-  currentUserId: string;
-  appt?: Appt;
-  defaultStart?: string;
-}) {
-  return (
-    <ActionForm action={action} className="space-y-4">
-      <Field label="Título" htmlFor="a-title">
-        <Input id="a-title" name="title" required defaultValue={appt?.title} placeholder="Ex.: Reunião de apresentação" />
-      </Field>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Início" htmlFor="a-start">
-          <Input id="a-start" name="starts_at" type="datetime-local" required defaultValue={appt ? toLocalInput(appt.starts_at) : defaultStart} />
-        </Field>
-        <Field label="Término" htmlFor="a-end" hint="Padrão: 1 hora após o início.">
-          <Input id="a-end" name="ends_at" type="datetime-local" defaultValue={toLocalInput(appt?.ends_at)} />
-        </Field>
-        <Field label="Local ou link" htmlFor="a-loc">
-          <Input id="a-loc" name="location" defaultValue={appt?.location ?? ""} />
-        </Field>
-        <Field label="Responsável" htmlFor="a-owner">
-          <Select id="a-owner" name="owner_id" defaultValue={appt?.owner_id ?? currentUserId}>
-            {members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
-      </div>
-      <Field label="Empresa ou pessoa">
-        <EntityPicker orgId={orgId} defaultValue={appt?.entity} />
-      </Field>
-      <Field label="Descrição" htmlFor="a-desc">
-        <Textarea id="a-desc" name="description" defaultValue={appt?.description ?? ""} />
-      </Field>
-      <FormActions>
-        <SubmitButton>Salvar</SubmitButton>
-      </FormActions>
-    </ActionForm>
-  );
-}
 
 export default async function AgendaPage({ searchParams }: PageProps<"/agenda">) {
   const sp = await searchParams;
@@ -96,7 +31,9 @@ export default async function AgendaPage({ searchParams }: PageProps<"/agenda">)
     .gte("starts_at", dayStart(gridStart))
     .lt("starts_at", dayStart(addDays(gridStart, 42)))
     .order("starts_at");
-  if (resp === "meus") query = query.eq("owner_id", ctx.user.id);
+  const ownerFilter = await getOwnerFilter();
+  if (ownerFilter) query = query.or(ownedByFilter(["owner_id", "created_by"], ownerFilter));
+  else if (resp === "meus") query = query.eq("owner_id", ctx.user.id);
   const { data } = await query;
   const appts = (data ?? []) as Appt[];
 
@@ -146,20 +83,22 @@ export default async function AgendaPage({ searchParams }: PageProps<"/agenda">)
               <LinkButton href={nav(monthStartISO(), today)} size="sm">
                 Hoje
               </LinkButton>
-              <div className="inline-flex rounded-md border border-line p-0.5 text-[13px]">
-                {[
-                  ["todos", "Equipe"],
-                  ["meus", "Meus"],
-                ].map(([key, label]) => (
-                  <Link
-                    key={key}
-                    href={`/agenda?mes=${mes.slice(0, 7)}&resp=${key}&dia=${selected}`}
-                    className={cn("rounded px-2 py-1", resp === key ? "bg-surface-2 font-medium" : "text-muted")}
-                  >
-                    {label}
-                  </Link>
-                ))}
-              </div>
+              {!ownerFilter && (
+                <div className="inline-flex rounded-md border border-line p-0.5 text-[13px]">
+                  {[
+                    ["todos", "Equipe"],
+                    ["meus", "Meus"],
+                  ].map(([key, label]) => (
+                    <Link
+                      key={key}
+                      href={`/agenda?mes=${mes.slice(0, 7)}&resp=${key}&dia=${selected}`}
+                      className={cn("rounded px-2 py-1", resp === key ? "bg-surface-2 font-medium" : "text-muted")}
+                    >
+                      {label}
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           <div className="grid grid-cols-7 border-b border-line text-center text-xs text-muted">

@@ -7,6 +7,8 @@ export type Member = {
   name: string;
   email: string | null;
   role: Role;
+  avatarUrl?: string | null;
+  jobTitle?: string | null;
 };
 
 export type CustomField = {

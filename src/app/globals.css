@@ -161,6 +161,16 @@ dialog.drawer[open] {
   animation: drawer-in 220ms cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 
+dialog.drawer-right[open] {
+  animation: drawer-right-in 220ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+@keyframes drawer-right-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
 @keyframes dialog-in {
   from {
     opacity: 0;
@@ -199,6 +209,7 @@ dialog.drawer[open] {
 @media (prefers-reduced-motion: reduce) {
   dialog[open],
   dialog.drawer[open],
+  dialog.drawer-right[open],
   .animate-pop,
   .animate-toast {
     animation: none;

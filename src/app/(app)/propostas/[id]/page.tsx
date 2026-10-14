@@ -69,7 +69,7 @@ export default async function ProposalPage({ params }: PageProps<"/propostas/[id
             </ActionButton>
           )}
           <PrintButton />
-          <ActionButton action={deleteProposal.bind(null, p.id)} confirm="Excluir esta proposta?" variant="ghost" size="md" title="Excluir proposta">
+          <ActionButton action={deleteProposal.bind(null, p.id)} confirm="Mover esta proposta para a lixeira? Você pode recuperá-la em Configurações › Lixeira por até 60 dias." confirmLabel="Mover para a lixeira" variant="ghost" size="md" title="Excluir proposta">
             <Trash2 className="size-4" />
           </ActionButton>
         </div>
